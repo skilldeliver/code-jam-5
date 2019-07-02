@@ -6,7 +6,15 @@ import pygame as pg
 from project.UI.page.credits import Credits
 from project.UI.page.main_menu import MainMenu
 from project.UI.page.options import Options
-from project.constants import Color, FPS, HEIGHT, SHOW_FPS, WIDTH, WindowState
+from project.constants import (
+    Color,
+    FPS,
+    HEIGHT,
+    SHOW_FPS,
+    WIDTH,
+    WindowState,
+    GameLayer,
+)
 from project.gameplay.game_view import GameView
 
 
@@ -36,6 +44,8 @@ class Game:
         self.options = Options(self.screen)
         self.credits = Credits(self.screen)
         self.game_view = GameView()
+        if SHOW_FPS:
+            self.game_view.add(self.FpsIndicator(self.clock))
 
     def run(self):
         """Draw and get events."""
@@ -78,14 +88,25 @@ class Game:
             elif self.window_state == WindowState.quited:
                 self.running = False
 
-        if SHOW_FPS:
-            self._draw_fps()
-
         pg.display.flip()
 
-    def _draw_fps(self):
-        font = pg.font.Font(None, 50)
-        fps_indicator = font.render(
-            str(int(self.clock.get_fps())), True, pg.Color("red")
-        )
-        self.screen.blit(fps_indicator, (WIDTH - fps_indicator.get_width(), 0))
+    class FpsIndicator(pg.sprite.DirtySprite):
+        """FPS indicator is drawn at the top right of the screen."""
+
+        _layer = GameLayer.LAYER_UI
+
+        def __init__(self, clock):
+            super().__init__()
+            self.dirty = 2
+
+            self.clock = clock
+
+            self.font = pg.font.Font(None, 50)
+
+        def update(self) -> None:
+            self.image = self.font.render(
+                str(int(self.clock.get_fps())), True, pg.Color("red")
+            )
+            self.rect = self.image.get_rect()
+            self.rect.x = WIDTH - self.image.get_width()
+            self.rect.y = 0

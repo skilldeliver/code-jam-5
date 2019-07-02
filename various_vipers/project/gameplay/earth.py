@@ -35,9 +35,6 @@ class Earth(pg.sprite.LayeredDirty):
     Includes logic for handling background and game tasks.
     """
 
-    current_cloud_bg_pos: float = 0
-    current_cloud_fg_pos: float = 0
-
     def __init__(self, biomes: List[Biome]):
         super().__init__()
 
@@ -62,10 +59,25 @@ class Earth(pg.sprite.LayeredDirty):
                 end = start + TILE_COLS
                 self.add(tiles[start:end])
 
+        # Add initial clouds
+        offset_bg = 0
+        offset_fg = 0
+        while offset_bg < WIDTH or offset_fg < WIDTH:
+            if offset_bg < WIDTH:
+                new_cloud = CloudsFarther()
+                new_cloud.rect.x = offset_bg
+                offset_bg += new_cloud.image.get_width()
+                self.add(new_cloud)
+            if offset_fg < WIDTH:
+                new_cloud = CloudsCloser()
+                new_cloud.rect.x = offset_fg
+                offset_fg += new_cloud.image.get_width()
+                self.add(new_cloud)
+
     @property
     def clouds(self) -> List[Clouds]:
         """Returns visible clouds."""
-        return [c for c in self.sprites() if c == type(Clouds)]
+        return [c for c in self.sprites() if isinstance(c, Clouds)]
 
     def update(self) -> None:
         """Update game logic with each game tick."""
@@ -82,7 +94,6 @@ class Earth(pg.sprite.LayeredDirty):
         self._update_clouds()
         # update indicators - remove, move, add
         self._update_indicators()
-        super().update()
 
     def _update_biomes(self) -> None:
         """Move farthest biomes closer to create looping effect."""
@@ -99,24 +110,31 @@ class Earth(pg.sprite.LayeredDirty):
 
     def _update_clouds(self) -> None:
         """Add new clouds, remove offscreen clouds."""
-        # Check if we need to add new clouds
-        new_cloud = None
-        if self.current_cloud_bg_pos > 0:
-            new_cloud = CloudsFarther()
-            self.current_cloud_bg_pos = -new_cloud.image.get_width()
-            new_cloud.rect.x = self.current_cloud_bg_pos
-        if self.current_cloud_fg_pos > 0:
-            new_cloud = CloudsCloser()
-            self.current_cloud_fg_pos = -new_cloud.image.get_width()
-            new_cloud.rect.x = self.current_cloud_fg_pos
+        # Clouds that are offscreen to the left - if not found, create one
+        found_offscreen_bg_cloud = False
+        found_offscreen_fg_cloud = False
 
-        if new_cloud:
-            self.add(new_cloud)
-
-        # Remove clouds that scrolled out of screen to the right
         for cloud in self.clouds:
-            if cloud.rect.x >= WIDTH:
+            if cloud.rect.x < 0:
+                # Find clouds that are offscreen to the left
+                if isinstance(cloud, CloudsFarther):
+                    found_offscreen_bg_cloud = True
+                elif isinstance(cloud, CloudsCloser):
+                    found_offscreen_fg_cloud = True
+            elif cloud.rect.x >= WIDTH:
+                # Remove clouds that scrolled out of screen to the right
                 self.remove(cloud)
+
+        # Add new clouds if missing
+        if not found_offscreen_bg_cloud:
+            new_cloud = CloudsFarther()
+            new_cloud.rect.x = -new_cloud.image.get_width()
+            logger.debug("adding cloud")
+            self.add(new_cloud)
+        if not found_offscreen_fg_cloud:
+            new_cloud = CloudsCloser()
+            new_cloud.rect.x = -new_cloud.image.get_width()
+            self.add(new_cloud)
 
     def _update_indicators(self) -> None:
         """Add new indicators, move existing indicators."""

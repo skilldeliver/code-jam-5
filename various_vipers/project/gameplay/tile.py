@@ -39,7 +39,7 @@ class Tile(pg.sprite.DirtySprite):
 
     def __init__(self, image: str):
         super().__init__()
-        self.dirty = 1
+        self.dirty = 2
 
         self.image = load(image).convert_alpha()
 

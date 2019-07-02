@@ -36,6 +36,7 @@ class GameView(pg.sprite.LayeredDirty):
         """Update gets called every game tick."""
         self.add(self.period)
         self.period.update()
+        super().update()
 
     class GameBackground(pg.sprite.DirtySprite):
         """Background filling whole game screen."""
