@@ -1,6 +1,7 @@
 """All game contstants."""
 
 import logging
+from enum import IntEnum
 from pathlib import Path, PurePath
 
 
@@ -62,6 +63,20 @@ class Button:
     main_btn_w = 400
     main_btn_h = 100
     btn_gap = 50
+
+
+class GameLayer(IntEnum):
+    """Game layers will be used to check draw order."""
+
+    LAYER_BACKGROUND = 0
+    LAYER_CLOUDS_BG = 1
+    LAYER_BLOUDS_FG = 2
+    LAYER_BIOME_BG = 3
+    LAYER_TILES = 4
+    LAYER_INDICATORS = 5
+    LAYER_UI = 6
+    # Will be used as default layer to see unlayered sprites
+    LAYER_DEFAULT = 99
 
 
 PATH_PROJECT = PurePath(__file__).parent

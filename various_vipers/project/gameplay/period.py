@@ -13,7 +13,7 @@ from .task import TaskCursorMaze, TaskRockPaperScissors, TaskTicTacToe
 logger = logging.getLogger(__name__)
 
 
-class Period(object):
+class Period(pg.sprite.LayeredDirty):
     """
     This class represents an abstract Time Period Style.
 
@@ -36,8 +36,8 @@ class Period(object):
     rps_chance: float = 1.0
     ttt_chance: float = 1.0
 
-    def __init__(self, screen: pg.Surface):
-        self.screen = screen
+    def __init__(self):
+        super().__init__()
 
         self.biomes = [
             BiomeDesert(),
@@ -54,16 +54,13 @@ class Period(object):
             BiomeCity(),
         ]
 
-        self.earth = Earth(self.screen, self.biomes)
+        self.earth = Earth(self.biomes)
 
     def update(self) -> None:
         """Update gets called every game tick."""
+        self.add(self.earth)
         self.earth.update()
         self.__handle_task_spawn()
-
-    def draw(self) -> None:
-        """Draw gets called every game tick."""
-        self.earth.draw()
 
     def __handle_task_spawn(self) -> None:
         if (
@@ -88,18 +85,17 @@ class Period(object):
         biome_idx = random_tile_idx // (TILE_COLS * TILE_ROWS)
         # Calculate tile index local to the biome chosen
         tile_in_biome_idx = random_tile_idx - (TILE_COLS * TILE_ROWS * biome_idx)
-        tile_y = tile_in_biome_idx // TILE_COLS
-        tile_x = tile_in_biome_idx - (tile_y * TILE_COLS)
 
         biome = self.biomes[biome_idx]
-        tile = biome.tilemap[tile_y][tile_x]
+        tile = biome.tiles[tile_in_biome_idx]
         new_task = random.choices(
             [TaskCursorMaze, TaskRockPaperScissors, TaskTicTacToe],
             weights=[self.maze_chance, self.rps_chance, self.ttt_chance],
         )
         tile.task = new_task[0](biome)
+        tile.dirty = 2
 
-        self.earth.fix_indicators()
+        # self.earth.fix_indicators()
 
 
 class PeriodMedieval(Period):

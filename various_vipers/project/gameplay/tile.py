@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional, TYPE_CHECKING
 
 import pygame as pg
 from pygame.image import load
 from pygame.transform import scale
 
-from project.constants import TILE_WIDTH
+from project.constants import GameLayer, TILE_WIDTH
 
 if TYPE_CHECKING:
     # Avoid cyclic imports
@@ -14,14 +15,17 @@ if TYPE_CHECKING:
     from .task import Task
 
 
-class Tile:
+logger = logging.getLogger(__name__)
+
+
+class Tile(pg.sprite.DirtySprite):
     """
     Generic class for Earth tiles.
 
     Class holds information about tile type, its image, and available actions.
     """
 
-    __image: pg.Surface = None
+    _layer: int = GameLayer.LAYER_TILES
 
     # Current task associated with this tile
     # Tiles with tasks have different appearance
@@ -34,35 +38,47 @@ class Tile:
     breathing_direction: int = 1  # 1 -> outwards, -1 -> inwards
 
     def __init__(self, image: str):
-        self.__image = load(image).convert_alpha()
+        super().__init__()
+        self.dirty = 1
 
-        scale_percent = TILE_WIDTH / self.__image.get_width()
-        new_height = int(self.__image.get_height() * scale_percent)
+        self.image = load(image).convert_alpha()
+
+        scale_percent = TILE_WIDTH / self.image.get_width()
+        new_height = int(self.image.get_height() * scale_percent)
 
         # scale image based on game screen size
-        self.__image = scale(self.__image, (TILE_WIDTH, new_height))
+        self.image = scale(self.image, (TILE_WIDTH, new_height))
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = 0
 
     def update(self) -> None:
         """Update is called every game tick."""
         self.__breathe()
 
-    def get_image(self) -> pg.Surface:
+    @property
+    def image(self) -> pg.Surface:
         """
         Returns image of this tile.
 
         Method transforms the image based on if it is a task or not.
         """
-        transformed_image = self.__image
+        transformed_image = self._image
 
-        # Scaled based on original image
-        new_width = int(self.__image.get_width() * self.current_scale)
-        new_height = int(self.__image.get_height() * self.current_scale)
-        transformed_image = scale(transformed_image, (new_width, new_height))
         if self.task is not None:
+            # Scaled based on original image
+            new_width = int(self._image.get_width() * self.current_scale)
+            new_height = int(self._image.get_height() * self.current_scale)
+            transformed_image = scale(transformed_image, (new_width, new_height))
             # Add colored tint
             transformed_image.fill((255, 0, 0, 150), special_flags=pg.BLEND_MULT)
 
         return transformed_image
+
+    @image.setter
+    def image(self, value: pg.Surface) -> None:
+        """Custom setter for image field."""
+        self._image = value
 
     def __breathe(self) -> None:
         """Will add "breathing" effect to the tile if it has a task active."""

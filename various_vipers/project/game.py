@@ -35,7 +35,7 @@ class Game:
         self.main_menu = MainMenu(self.screen)
         self.options = Options(self.screen)
         self.credits = Credits(self.screen)
-        self.game_view = GameView(self.screen)
+        self.game_view = GameView()
 
     def run(self):
         """Draw and get events."""
@@ -57,8 +57,7 @@ class Game:
 
     def _draw(self):
         if self.playing and self.game_view:
-            self.screen.fill(Color.sky)
-            self.game_view.draw()
+            self.game_view.draw(self.screen)
         else:
             self.screen.fill(Color.aqua)
 
